@@ -1,4 +1,7 @@
-<!DOCTYPE html>
+package static
+
+// HTML is the template for the HTML page
+const HTML = `<!DOCTYPE html>
 <html>
 <head>
     <title>{{.Title}}</title>
@@ -12,7 +15,25 @@
     <!-- Include Bootstrap Icons (for GitHub icon) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <!-- Include custom CSS -->
-    <link rel="stylesheet" type="text/css" href="/static/css/style.css" />
+	<style>
+		.navbar {
+			background-color: #010b18; /* Dark blue color */
+		}
+		.navbar-brand {
+			color: #fff;
+			font-weight: bold;
+		}
+		.github-star {
+			font-size: 24px;
+			color: #fff;
+			margin-right: 20px;
+		}
+		
+		#myDiffElement {
+			margin-left: 10%;
+			margin-right: 10%;
+		}
+	</style>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/diff2html/bundles/js/diff2html-ui.min.js"></script>
     <script async defer src="https://buttons.github.io/buttons.js"></script>
 </head>
@@ -35,6 +56,35 @@
     <div id="myDiffElement" class="container-left"></div>
     <div id="diff-data" data-diff="{{.Diff}}" hidden></div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="/static/js/script.js"></script>
+    <script>
+		var diffString = document.getElementById("diff-data").getAttribute("data-diff");
+		document.addEventListener('DOMContentLoaded', function () {
+			var targetElement = document.getElementById('myDiffElement');
+			var configuration = {
+				drawFileList: true,
+				fileListToggle: true,
+				fileListStartVisible: true,
+				fileContentToggle: true,
+				matching: 'lines',
+				outputFormat: 'side-by-side',
+				synchronisedScroll: true,
+				highlight: true,
+				highlightLanguages: true,
+				renderNothingWhenEmpty: false,
+			};
+			var diff2htmlUi = new Diff2HtmlUI(targetElement, diffString, configuration);
+			diff2htmlUi.draw();
+			diff2htmlUi.highlightCode();
+		
+			// Dark mode toggle functionality
+			const darkModeToggle = document.getElementById('darkModeToggle');
+			const body = document.body;
+		
+			darkModeToggle.addEventListener('click', () => {
+				body.classList.toggle('dark-mode');
+			});
+		});
+	</script>
 </body>
 </html>
+`

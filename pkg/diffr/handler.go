@@ -2,6 +2,7 @@ package diffr
 
 import (
 	"fmt"
+	"github.com/imrajdas/diffr/static"
 	"html/template"
 	"net/http"
 	"os"
@@ -49,7 +50,7 @@ func RunWebServer(cmd *cobra.Command, args []string) {
 	serverURL := fmt.Sprintf("%s:%d", Address, Port)
 
 	http.HandleFunc("/", handler)
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	//http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	server := &http.Server{Addr: fmt.Sprintf(":%d", Port)}
 
@@ -119,22 +120,24 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Printf("Time taken to analyze all files: %s\n", elapsed)
 
-	tmpl, err := template.ParseFiles("static/templates/template.html")
-	if err != nil {
-		fmt.Printf("error: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 
-	data := PageData{
-		Title: "Diffr - A web-based content difference analyzer",
-		Diff:  finalStr,
-	}
+		tmpl := template.Must(template.New("html").Parse(static.HTML))
 
-	// Execute the template with the data and write the output to the response writer
-	err = tmpl.Execute(w, data)
-	if err != nil {
-		fmt.Printf("error: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+		data := PageData{
+			Title: "Diffr - A web-based content difference analyzer",
+			Diff:  finalStr,
+		}
+
+		// Execute the templates with the provided data
+		err := tmpl.Execute(w, data)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}()
+
+	wg.Wait()
 }
