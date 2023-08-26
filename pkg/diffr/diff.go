@@ -65,6 +65,7 @@ func compareFiles(file1, file2 string) (string, error) {
 func CompareDirectories(dir1, dir2 string, diffChan chan<- string, errorChan chan<- error, wg *sync.WaitGroup) {
 	defer wg.Done()
 
+	var comparisonsCount int
 	filepath.Walk(dir1, func(path1 string, info os.FileInfo, err error) error {
 		if err != nil {
 			errorChan <- fmt.Errorf("error accessing %s: %s", path1, err)
@@ -91,6 +92,7 @@ func CompareDirectories(dir1, dir2 string, diffChan chan<- string, errorChan cha
 			}
 
 			if diff != "" {
+				comparisonsCount++
 				diffChan <- fmt.Sprintf("Differences in file: %s\n%s", relPath, diff)
 			}
 		} else if os.IsNotExist(err) {
@@ -108,6 +110,7 @@ func CompareDirectories(dir1, dir2 string, diffChan chan<- string, errorChan cha
 			}
 
 			if diff != "" {
+				comparisonsCount++
 				diffChan <- fmt.Sprintf("Differences in file: %s (present in %s but not in %s)\n%s", relPath, dir1, dir2, diff)
 			}
 		} else {
@@ -116,4 +119,6 @@ func CompareDirectories(dir1, dir2 string, diffChan chan<- string, errorChan cha
 
 		return nil
 	})
+
+	fmt.Printf("Total file comparisons: %d\n", comparisonsCount) // Print the count at the end
 }

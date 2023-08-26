@@ -11,6 +11,11 @@ var VersionCmd = &cobra.Command{
 	Short: "Displays the version of diffr",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Printf("Diffr Version: %s", os.Getenv("VERSION"))
+		version := os.Getenv("VERSION")
+		if version == "" {
+			version = "develop"
+		}
+
+		cmd.Printf("Diffr Version: %s", version)
 	},
 }

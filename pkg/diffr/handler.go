@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -92,11 +93,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		finalStr  = ""
 		diffChan  = make(chan string)
 		errorChan = make(chan error)
+		start     = time.Now()
+		elapsed   time.Duration
 	)
 
 	go func() {
 		for diff := range diffChan {
 			finalStr += diff
+			elapsed = time.Since(start)
 		}
 	}()
 
@@ -112,6 +116,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	close(diffChan)
 	close(errorChan)
+
+	fmt.Printf("Time taken to analyze all files: %s\n", elapsed)
 
 	tmpl, err := template.ParseFiles("static/templates/template.html")
 	if err != nil {
