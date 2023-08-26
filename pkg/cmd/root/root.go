@@ -7,10 +7,10 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:     "diffr [dir1] [dir2]",
+	Use:     "diffr [dir1/file1] [dir2/file2]",
 	Example: "diffr /path/to/dir1 /path/to/dir2",
 	Short:   "A web-based content difference analyzer",
-	Long:    `A web-based tool to compare content differences between two directories ` + "\n" + `Find more information at: https://github.com/imrajdas/diffr`,
+	Long:    `A web-based tool to compare content differences between two directories/files` + "\n" + `Find more information at: https://github.com/imrajdas/diffr`,
 	Args:    cobra.ExactArgs(2),
 	Run:     diffr.RunWebServer,
 }
