@@ -1,5 +1,9 @@
 # Diffr - Simplifying Directory and File Content Comparison
 
+![GitHub Workflow](https://github.com/imrajdas/diffr/actions/workflows/build-check.yml/badge.svg?branch=main)
+[![GitHub stars](https://img.shields.io/github/stars/imrajdas/diffr?style=social)](https://github.com/imrajdas/diffr/stargazers)
+[![GitHub Release](https://img.shields.io/github/release/imrajdas/diffr.svg?style=flat)]()
+
 
 Diffr is an open-source web-based tool designed to make comparing content differences between two directories, and even files, a simple and intuitive process. Whether you're a developer comparing source code, a designer comparing image assets, or anyone dealing with files, Diffr provides a user-friendly interface to quickly identify changes and similarities between directories and files.
 
