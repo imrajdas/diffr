@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-custom_package="diffr"
+custom_package=$1
 if [[ -z "$custom_package" ]]; then
   echo "Usage: $0 diffr [dir1/file1 dir2/file2]]"
   exit 1
