@@ -26,3 +26,9 @@ jobs:
 
     - name: Test
       run: go test -v ./...
+      
+    - name: Aqua Security Trivy
+      uses: aquasecurity/trivy-action@0.11.2
+      with:
+        exit-code: 1
+        # ignore unfixed vulnerabilities
