@@ -5,6 +5,8 @@ Diffr is an open-source web-based tool designed to make comparing content differ
 
 Visit the project on GitHub: [https://github.com/imrajdas/diffr](https://github.com/imrajdas/diffr)
 
+<img src="./static/images/demo.png">
+
 ## Table of Contents
 
 - [Installation](#installation)
