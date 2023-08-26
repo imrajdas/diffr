@@ -1,29 +1,54 @@
 package diffr
 
 import (
+	"bufio"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"sync"
 
 	"github.com/pmezard/go-difflib/difflib"
 )
 
+func readFileContent(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	bufferedReader := bufio.NewReader(file)
+	var contentBuilder strings.Builder
+	bufferSize := 4096
+	buffer := make([]byte, bufferSize)
+
+	for {
+		n, err := bufferedReader.Read(buffer)
+		if err != nil {
+			break
+		}
+		contentBuilder.Write(buffer[:n])
+	}
+
+	return contentBuilder.String(), nil
+}
+
 func compareFiles(file1, file2 string) (string, error) {
-	content1, err := ioutil.ReadFile(file1)
+	content1, err := readFileContent(file1)
 	if err != nil {
 		return "", err
 	}
 
-	content2, err := ioutil.ReadFile(file2)
+	content2, err := readFileContent(file2)
 	if err != nil {
 		return "", err
 	}
 
 	diff := difflib.UnifiedDiff{
-		A:        difflib.SplitLines(string(content1)),
-		B:        difflib.SplitLines(string(content2)),
+		A:        difflib.SplitLines(content1),
+		B:        difflib.SplitLines(content2),
 		FromFile: file1,
 		ToFile:   file2,
 		Context:  3,
@@ -69,9 +94,16 @@ func CompareDirectories(dir1, dir2 string, diffChan chan<- string, errorChan cha
 				diffChan <- fmt.Sprintf("Differences in file: %s\n%s", relPath, diff)
 			}
 		} else if os.IsNotExist(err) {
-			diff, err := compareFiles(path1, "/dev/null")
+			var nullDevice string
+			if runtime.GOOS == "windows" {
+				nullDevice = "NUL"
+			} else {
+				nullDevice = "/dev/null"
+			}
+
+			diff, err := compareFiles(path1, nullDevice)
 			if err != nil {
-				errorChan <- fmt.Errorf("error comparing files %s and /dev/null: %s", path1, err)
+				errorChan <- fmt.Errorf("error comparing files %s and %s: %s", path1, nullDevice, err)
 				return nil
 			}
 
