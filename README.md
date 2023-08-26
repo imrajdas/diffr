@@ -14,6 +14,7 @@ Visit the project on GitHub: [https://github.com/imrajdas/diffr](https://github.
 ## Table of Contents
 
 - [Installation](#installation)
+- [Build](#build)
 - [Usage](#usage)
 - [Commands](#commands)
 - [Flags](#flags)
@@ -23,10 +24,66 @@ Visit the project on GitHub: [https://github.com/imrajdas/diffr](https://github.
 
 ## Installation
 
+Diffr is designed to be cross-platform and should work on various operating systems, including:
+
+* Linux
+* macOS
+* Windows
+
+Download the latest release for your operating system from here- [https://github.com/imrajdas/diffr/releases](https://github.com/imrajdas/diffr/releases)
+
+### Linux/MacOS
+
+* Extract the binary
+
+```shell
+tar -zxvf diffr-<OS>-<ARCH>-<VERSION>.tar.gz
+```
+
+* Provide necessary permissions
+
+```shell
+chmod +x diffr
+```
+
+* Move the diffr binary to /usr/local/bin/diffr
+
+```shell
+sudo mv diffr /usr/local/bin/diffr
+```
+
+* Run Diffr on Linux/MacOS:
+
+```shell
+diffr [dir1/file1] [dir2/file2] [flags]
+```
+
+### Windows
+
+* Extract the Binary from the Zip Archive
+
+* Check the Diffr Version
+
+```shell
+diffr.exe <command> <subcommand> <subcommand> [options and parameters]
+```
+
+* To check the version of the diffr:
+
+```shell
+diffr version
+```
+
+## Build
+
 To use Diffr, you need to have [Go](https://golang.org/) installed on your system. Once you have Go set up, you can install Diffr using the following command:
 
 ```bash
-go get -u github.com/imrajdas/diffr
+git clone https://github.com/imrajdas/diffr
+go get -v
+go build main.go -o diffr
+
+./diffr --help
 ```
 
 ## Usage
