@@ -132,13 +132,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Execute the templates with the provided data
+		w.WriteHeader(http.StatusOK)
 		err := tmpl.Execute(w, data)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		w.WriteHeader(http.StatusOK)
 	}()
 
 	wg.Wait()
