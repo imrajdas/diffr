@@ -54,10 +54,10 @@ const HTML = `<!DOCTYPE html>
     </nav>
     </br>
     <div id="myDiffElement" class="container-left"></div>
-    <div id="diff-data" data-diff="{{.Diff}}" hidden></div>
+    <div id="diff-data" hidden>{{.Diff}}</div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-		var diffString = document.getElementById("diff-data").getAttribute("data-diff");
+		var diffString = document.getElementById("diff-data").textContent;
 		document.addEventListener('DOMContentLoaded', function () {
 			var targetElement = document.getElementById('myDiffElement');
 			var configuration = {
