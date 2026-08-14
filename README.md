@@ -8,6 +8,8 @@ By default diffr opens a local web UI. You can also print a unified diff, write 
 [![Release](https://img.shields.io/github/v/release/imrajdas/diffr)](https://github.com/imrajdas/diffr/releases)
 [![License](https://img.shields.io/github/license/imrajdas/diffr)](LICENSE)
 
+<img src="./static/images/demo.png" alt="Diffr web UI">
+
 ## Install
 
 ### Homebrew (macOS / Linux)
