@@ -1,145 +1,124 @@
-# Diffr - Simplifying Directory and File Content Comparison
+# diffr
 
-![GitHub Workflow](https://github.com/imrajdas/diffr/actions/workflows/build-check.yml/badge.svg?branch=main)
-[![GitHub stars](https://img.shields.io/github/stars/imrajdas/diffr?style=social)](https://github.com/imrajdas/diffr/stargazers)
-[![GitHub Release](https://img.shields.io/github/release/imrajdas/diffr.svg?style=flat)]()
+Compare two directories or files. See what changed, what was added, and what was removed.
 
-Diffr compares two directories or files and shows what changed, what was added, and what was removed. By default it opens a local web UI. You can also print a unified diff, write a patch, or emit JSON for scripts and CI.
+By default diffr opens a local web UI. You can also print a unified diff, write a patch, or emit JSON for scripts and CI.
 
-Visit the project on GitHub: [https://github.com/imrajdas/diffr](https://github.com/imrajdas/diffr)
+[![Build](https://github.com/imrajdas/diffr/actions/workflows/build-check.yml/badge.svg?branch=main)](https://github.com/imrajdas/diffr/actions/workflows/build-check.yml)
+[![Release](https://img.shields.io/github/v/release/imrajdas/diffr)](https://github.com/imrajdas/diffr/releases)
+[![License](https://img.shields.io/github/license/imrajdas/diffr)](LICENSE)
 
-<img src="./static/images/demo.png">
+## Install
 
-## Table of Contents
-
-- [Installation](#installation)
-- [Build](#build)
-- [Usage](#usage)
-- [What Diffr compares](#what-diffr-compares)
-- [Web UI](#web-ui)
-- [Ignore rules](#ignore-rules)
-- [Commands](#commands)
-- [Flags](#flags)
-- [Examples](#examples)
-- [Exit codes](#exit-codes)
-- [Contributing](#contributing)
-- [License](#license)
-
-## Installation
-
-Diffr is designed to be cross-platform and should work on various operating systems, including:
-
-* Linux
-* macOS
-* Windows
-
-### Homebrew
+### Homebrew (macOS / Linux)
 
 ```bash
-brew tap imrajdas/tap
 brew install imrajdas/tap/diffr
 ```
 
-Homebrew 6 requires trusting a third-party cask. The fully qualified name does that for `diffr` only.
+```bash
+diffr version
+```
+
+Upgrade later with:
+
+```bash
+brew upgrade imrajdas/tap/diffr
+```
+
+The fully qualified name (`imrajdas/tap/diffr`) taps this repo and trusts only this cask. Equivalent two-step form:
+
+```bash
+brew tap imrajdas/tap
+brew install diffr
+```
 
 ### GitHub Releases
 
-Download the latest archive for your OS from [GitHub Releases](https://github.com/imrajdas/diffr/releases).
+Grab the archive for your OS from [Releases](https://github.com/imrajdas/diffr/releases).
 
-### Linux/macOS
+**Linux / macOS**
 
-* Extract the binary
-
-```shell
-tar -zxvf diffr_<VERSION>_<OS>_<ARCH>.tar.gz
-```
-
-* Provide necessary permissions
-
-```shell
+```bash
+tar -zxvf diffr_*_*.tar.gz
 chmod +x diffr
-```
-
-* Move the diffr binary to /usr/local/bin/diffr
-
-```shell
 sudo mv diffr /usr/local/bin/diffr
+diffr version
 ```
 
-* Run Diffr on Linux/macOS:
+**Windows** — unzip the archive and run `diffr.exe version`.
 
-```shell
-diffr [dir1/file1] [dir2/file2] [flags]
+### From source
+
+Needs [Go](https://go.dev/) 1.26.6 or later.
+
+```bash
+go install github.com/imrajdas/diffr@latest
 ```
 
-### Windows
-
-* Extract the zip archive
-* Run `diffr.exe version` to confirm the install
-
-## Build
-
-You need [Go](https://golang.org/) 1.26.6 or later.
+Or clone and build:
 
 ```bash
 git clone https://github.com/imrajdas/diffr
 cd diffr
 go build -o diffr .
-
-./diffr --help
 ```
 
-## Usage
-
-Compare two directories or two files:
+## Quick start
 
 ```bash
-diffr [dir1/file1] [dir2/file2] [flags]
+# Open a side-by-side view in the browser
+diffr ./old ./new
+
+# Compare two files
+diffr ./old.txt ./new.txt
+
+# Print a unified diff (like diff -r)
+diffr ./old ./new --stdout
+
+# JSON for CI
+diffr ./old ./new --json
+
+# Write a patch
+diffr ./old ./new --patch changes.patch
 ```
 
-Without `--stdout`, `--json`, or `--patch`, Diffr starts a local web server (default `http://localhost:8675`) and opens it in your browser. Use `--no-open` to skip launching the browser.
+Without `--stdout`, `--json`, or `--patch`, diffr serves `http://localhost:8675` and opens it in your browser. Use `--no-open` if you only want the server.
 
-You can also use the command to access specific features:
+Try the bundled demo trees from this repo:
 
 ```bash
-diffr [command]
+diffr testdata/demo/left testdata/demo/right
 ```
 
-## What Diffr compares
+## What it compares
 
-Diffr walks **both** trees and reports:
+diffr walks **both** trees:
 
-- **changed** files present on both sides
-- **added** files only in the right tree
-- **removed** files only in the left tree
-- **identical** files (counted, not listed)
+| Status | Meaning |
+| --- | --- |
+| changed | Present on both sides, content differs |
+| added | Only in the right tree |
+| removed | Only in the left tree |
+| identical | Counted, not listed |
 
 File types are handled separately:
 
-- **Text** — unified diffs, shown side-by-side in the UI
+- **Text** — unified diffs, side-by-side in the UI
 - **Images** (PNG, JPEG, GIF) — pixel comparison with a left/right slider
 - **PDFs** — page count and extracted text
 - **Binaries** — size/hash comparison, never dumped as text
 
-## Web UI
-
-The browser view includes:
-
-- A summary of changed, added, removed, and identical files
-- Filter by filename, extension, or status
-- Side-by-side vs unified toggle
-- Dark mode
-- Image overlay slider (pixel diff is optional)
-- PDF and binary summaries (PDF text diffs stay on the PDF row)
+The web UI also has a summary bar, filters (name, extension, status), unified vs side-by-side, and dark mode.
 
 ## Ignore rules
 
-By default Diffr skips `.git`, `node_modules`, `__pycache__`, and a few other junk paths.
+By default diffr skips `.git`, `node_modules`, `__pycache__`, `.svn`, `.hg`, `.DS_Store`, and `Thumbs.db`.
 
-It also applies, in order:
+Rules are applied in this order:
 
 1. Built-in excludes (unless `--no-default-exclude`)
-2. `.diffrignore` in the current directory and at the root of each compared tree (gitignore syntax)
+2. `.diffrignore` in the current directory and at the root of each tree (gitignore syntax)
 3. `.gitignore` from the git root of each tree (unless `--no-gitignore`)
 4. `--exclude` / `-e` patterns (repeatable)
 5. `--ignore-file` for an extra ignore file
@@ -152,68 +131,42 @@ dist/
 vendor/
 ```
 
-## Commands
-
-Diffr supports the following commands:
-
-- `help`: Displays help information about any command.
-- `version`: Displays the version of Diffr.
-
 ## Flags
+
+```bash
+diffr [dir1/file1] [dir2/file2] [flags]
+diffr version
+```
 
 | Flag | Description |
 | --- | --- |
-| `-a, --address string` | Bind address for the web server (host or URL). Default: `http://localhost` |
-| `-p, --port int` | Port for the web server. Default: `8675` |
-| `--stdout` | Print a unified diff to stdout instead of starting the web UI |
-| `--json` | Print a JSON report to stdout instead of starting the web UI |
-| `--patch string` | Write a unified patch to a file (`-` for stdout) instead of starting the web UI |
-| `--no-open` | Do not open a browser when starting the web UI |
+| `-a, --address string` | Bind address for the web server. Default: `http://localhost` |
+| `-p, --port int` | Port. Default: `8675` |
+| `--stdout` | Print a unified diff instead of starting the web UI |
+| `--json` | Print a JSON report instead of starting the web UI |
+| `--patch string` | Write a unified patch (`-` for stdout) instead of starting the web UI |
+| `--no-open` | Do not open a browser |
 | `-C, --context int` | Unified-diff context lines. Default: `3` |
-| `-w, --ignore-whitespace` | Do not report files that differ only in whitespace |
-| `-i, --ignore-case` | Do not report files that differ only in case |
+| `-w, --ignore-whitespace` | Ignore files that differ only in whitespace |
+| `-i, --ignore-case` | Ignore files that differ only in case |
 | `-e, --exclude stringArray` | Gitignore-style glob to exclude (repeatable) |
-| `--ignore-file string` | Path to a `.diffrignore` file |
-| `--no-default-exclude` | Do not apply built-in excludes |
-| `--no-gitignore` | Do not apply `.gitignore` from git repositories |
-| `-h, --help` | Display help |
+| `--ignore-file string` | Extra `.diffrignore` file |
+| `--no-default-exclude` | Skip built-in excludes |
+| `--no-gitignore` | Do not apply `.gitignore` |
 
-`--stdout` uses color when stdout is a TTY. Set `NO_COLOR=1` for plain text. `--patch` files are always uncolored.
-
-## Examples
+`--stdout` is colored when stdout is a TTY. Set `NO_COLOR=1` for plain text. `--patch` files are always uncolored.
 
 ```bash
-# Compare two directories in the browser
-diffr /path/to/dir1 /path/to/dir2
-
-# Compare two files
-diffr /path/to/file1 /path/to/file2
-
-# CLI unified diff (like diff -r)
-diffr /path/to/dir1 /path/to/dir2 --stdout
-
-# JSON report for CI
-diffr /path/to/dir1 /path/to/dir2 --json
-
-# Write a patch file
-diffr /path/to/dir1 /path/to/dir2 --patch out.patch
-
-# Serve the UI without opening a browser
-diffr /path/to/dir1 /path/to/dir2 --no-open
-
-# Listen on all interfaces
-diffr /path/to/dir1 /path/to/dir2 -a 0.0.0.0 -p 9000 --no-open
+# UI on all interfaces, no browser
+diffr ./old ./new -a 0.0.0.0 -p 9000 --no-open
 
 # Ignore whitespace-only changes and extra paths
-diffr /path/to/dir1 /path/to/dir2 --stdout -w -e '*.log' -e 'vendor'
-
-# Try the bundled demo trees
-diffr testdata/demo/left testdata/demo/right
+diffr ./old ./new --stdout -w -e '*.log' -e vendor
 ```
 
 ## Exit codes
 
-When using `--stdout`, `--json`, or `--patch`:
+Used with `--stdout`, `--json`, or `--patch`:
 
 | Code | Meaning |
 | --- | --- |
@@ -223,8 +176,8 @@ When using `--stdout`, `--json`, or `--patch`:
 
 ## Contributing
 
-Contributions to Diffr are welcomed and encouraged! If you find a bug or have a feature request, please open an issue on the [GitHub repository](https://github.com/imrajdas/diffr). If you'd like to contribute code, feel free to fork the repository and submit a pull request.
+Bugs and ideas: open an [issue](https://github.com/imrajdas/diffr/issues). Code: fork and send a pull request.
 
 ## License
 
-Diffr is released under the [Apache](LICENSE). You are free to use, modify, and distribute this software in accordance with the terms of the license.
+[Apache License 2.0](LICENSE)
