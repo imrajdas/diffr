@@ -1,5 +1,7 @@
 .idea
 main
+diffr
+dist/
 scripts/*
 custom-platforms-0.1.0
 .DS_Store

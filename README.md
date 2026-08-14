@@ -33,14 +33,25 @@ Diffr is designed to be cross-platform and should work on various operating syst
 * macOS
 * Windows
 
-Download the latest release for your operating system from here- [https://github.com/imrajdas/diffr/releases](https://github.com/imrajdas/diffr/releases)
+### Homebrew
 
-### Linux/MacOS
+```bash
+brew tap imrajdas/tap
+brew install imrajdas/tap/diffr
+```
+
+Homebrew 6 requires trusting a third-party formula. The fully qualified name does that for `diffr` only.
+
+### GitHub Releases
+
+Download the latest archive for your OS from [GitHub Releases](https://github.com/imrajdas/diffr/releases).
+
+### Linux/macOS
 
 * Extract the binary
 
 ```shell
-tar -zxvf diffr-<OS>-<ARCH>-<VERSION>.tar.gz
+tar -zxvf diffr_<VERSION>_<OS>_<ARCH>.tar.gz
 ```
 
 * Provide necessary permissions
@@ -55,7 +66,7 @@ chmod +x diffr
 sudo mv diffr /usr/local/bin/diffr
 ```
 
-* Run Diffr on Linux/MacOS:
+* Run Diffr on Linux/macOS:
 
 ```shell
 diffr [dir1/file1] [dir2/file2] [flags]
@@ -63,13 +74,8 @@ diffr [dir1/file1] [dir2/file2] [flags]
 
 ### Windows
 
-* Extract the Binary from the Zip Archive
-
-* Check the Diffr Version
-
-```shell
-diffr.exe version
-```
+* Extract the zip archive
+* Run `diffr.exe version` to confirm the install
 
 ## Build
 

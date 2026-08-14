@@ -1,0 +1,44 @@
+version: 2
+
+project_name: diffr
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X main.Version={{.Version}}
+
+archives:
+  - formats: [tar.gz]
+    files:
+      - LICENSE
+      - README.md
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^Merge"
+
+brews:
+  - name: diffr
+    homepage: "https://github.com/imrajdas/diffr"
+    description: "Compare two directories or files in the browser or on the CLI"
+    license: Apache-2.0
+    directory: Formula
+    skip_upload: auto
+    test: |
+      system "#{bin}/diffr", "version"
+    repository:
+      owner: imrajdas
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
