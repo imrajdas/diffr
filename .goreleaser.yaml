@@ -28,15 +28,19 @@ changelog:
     exclude:
       - "^Merge"
 
-brews:
+homebrew_casks:
   - name: diffr
     homepage: "https://github.com/imrajdas/diffr"
     description: "Compare two directories or files in the browser or on the CLI"
-    license: Apache-2.0
-    directory: Formula
     skip_upload: auto
-    test: |
-      system "#{bin}/diffr", "version"
+    binaries:
+      - diffr
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/diffr"]
+          end
     repository:
       owner: imrajdas
       name: homebrew-tap

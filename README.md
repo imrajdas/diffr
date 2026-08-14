@@ -40,7 +40,7 @@ brew tap imrajdas/tap
 brew install imrajdas/tap/diffr
 ```
 
-Homebrew 6 requires trusting a third-party formula. The fully qualified name does that for `diffr` only.
+Homebrew 6 requires trusting a third-party cask. The fully qualified name does that for `diffr` only.
 
 ### GitHub Releases
 
