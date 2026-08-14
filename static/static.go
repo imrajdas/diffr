@@ -33,8 +33,24 @@ const HTML = `<!DOCTYPE html>
 			--border: #2d3a4f;
 			--nav: #010b18;
 		}
-		.navbar { background-color: var(--nav); }
-		.navbar-brand { color: #fff; font-weight: bold; }
+		.navbar {
+			background-color: var(--nav);
+			min-height: 56px;
+			padding-top: 0.5rem;
+			padding-bottom: 0.5rem;
+		}
+		.navbar > .container {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+		}
+		.navbar-brand {
+			color: #fff;
+			font-weight: bold;
+			margin: 0;
+			padding: 0;
+			line-height: 1;
+		}
 		.content { margin-left: 10%; margin-right: 10%; margin-top: 1.5rem; padding-bottom: 3rem; }
 		#myDiffElement { margin-bottom: 2rem; }
 		.stats-bar, .toolbar, .media-card {
@@ -124,7 +140,25 @@ const HTML = `<!DOCTYPE html>
 		body.dark-mode .d2h-emptyplaceholder, body.dark-mode .d2h-code-side-emptyplaceholder { background: #161b22; }
 		body.dark-mode .d2h-file-list-wrapper { background: var(--panel); color: var(--fg); }
 		#filterEmpty { display: none; }
-		.nav-actions { display: flex; align-items: center; gap: 0.75rem; }
+		.nav-actions {
+			display: flex;
+			align-items: center;
+			gap: 0.75rem;
+			line-height: 0;
+		}
+		.nav-actions .btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			height: 28px;
+			margin: 0;
+			padding: 0 0.7rem;
+			line-height: 1;
+			gap: 0.35rem;
+		}
+		.nav-actions iframe {
+			display: block;
+		}
 	</style>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/diff2html/bundles/js/diff2html-ui.min.js"></script>
     <script async defer src="https://buttons.github.io/buttons.js"></script>
