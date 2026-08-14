@@ -1,145 +1,282 @@
 package diffr
 
 import (
+	"context"
 	"fmt"
-	"github.com/imrajdas/diffr/static"
 	"html/template"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
+	"path"
+	"path/filepath"
 	"runtime"
-	"sync"
+	"strings"
 	"syscall"
 	"time"
 
+	"github.com/imrajdas/diffr/static"
 	"github.com/spf13/cobra"
 )
 
-var (
-	dir1 string
-	dir2 string
-)
-
-func openBrowser(url string) error {
+func openBrowser(rawURL string) error {
 	var cmd *exec.Cmd
-
 	switch runtime.GOOS {
 	case "darwin":
-		cmd = exec.Command("open", url)
+		cmd = exec.Command("open", rawURL)
 	case "linux":
-		cmd = exec.Command("xdg-open", url)
+		cmd = exec.Command("xdg-open", rawURL)
 	case "windows":
-		cmd = exec.Command("cmd", "/c", "start", url)
+		cmd = exec.Command("cmd", "/c", "start", rawURL)
 	default:
 		return fmt.Errorf("unsupported platform")
 	}
-
 	return cmd.Start()
 }
 
-func RunWebServer(cmd *cobra.Command, args []string) {
-	if len(args) != 2 {
-		fmt.Errorf("Error: Usage: \n diffr /path/to/dir1 /path/to/dir2")
+func Run(cmd *cobra.Command, args []string) {
+	opts := Options{
+		Exclude:          Exclude,
+		IgnoreFile:       IgnoreFile,
+		NoDefaultExclude: NoDefaultExclude,
+		NoGitignore:      NoGitignore,
+		IgnoreWhitespace: IgnoreWhitespace,
+		IgnoreCase:       IgnoreCase,
+		Context:          Context,
+	}
+
+	res, err := Compare(args[0], args[1], opts)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(2)
+	}
+
+	if Stdout || JSON || PatchFile != "" {
+		if err := WriteCLI(res, Stdout, JSON, PatchFile); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(2)
+		}
+		if res.HasChanges() {
+			os.Exit(1)
+		}
 		return
 	}
 
-	dir1 = args[0]
-	dir2 = args[1]
+	runWeb(res)
+}
 
-	serverURL := fmt.Sprintf("%s:%d", Address, Port)
+func runWeb(res *Result) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+		renderPage(w, res)
+	})
+	mux.HandleFunc("/media/", func(w http.ResponseWriter, r *http.Request) {
+		serveMedia(w, r, res)
+	})
 
-	http.HandleFunc("/", handler)
-	//http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	listenAddr, serverURL, err := listenAndDisplay(Address, Port)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(2)
+	}
 
-	server := &http.Server{Addr: fmt.Sprintf(":%d", Port)}
+	server := &http.Server{
+		Addr:    listenAddr,
+		Handler: mux,
+	}
 
-	// Channel to receive signals (e.g., interrupt or termination)
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		fmt.Printf("Server started at %s\n", serverURL)
-		err := server.ListenAndServe()
-		if err != nil && err != http.ErrServerClosed {
-			fmt.Println("Error starting server:", err)
-			os.Exit(1)
+		fmt.Printf("Server started at %s (listening on %s)\n", serverURL, listenAddr)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			fmt.Fprintf(os.Stderr, "Error starting server: %v\n", err)
+			os.Exit(2)
 		}
 	}()
 
-	fmt.Println("Opening browser...")
-	err := openBrowser(serverURL)
-	if err != nil {
-		fmt.Println("Error opening browser:", err)
+	if !NoOpen {
+		fmt.Println("Opening browser...")
+		if err := openBrowser(serverURL); err != nil {
+			fmt.Fprintf(os.Stderr, "Error opening browser: %v\n", err)
+		}
+	} else {
+		fmt.Println("Browser launch skipped (--no-open)")
 	}
 
-	// Wait for a termination signal
 	<-signalCh
-
 	fmt.Println("Shutting down server...")
-	err = server.Shutdown(nil)
-	if err != nil {
-		fmt.Println("Error shutting down server:", err)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		fmt.Fprintf(os.Stderr, "Error shutting down server: %v\n", err)
 	}
+}
+
+type ImageView struct {
+	RelPath  string
+	Status   string
+	Summary  string
+	LeftURL  string
+	RightURL string
+	DiffURL  string
+	HasLeft  bool
+	HasRight bool
+	HasDiff  bool
+}
+
+type ExtraView struct {
+	RelPath string
+	Status  string
+	Summary string
+	Kind    string
+	Unified string
 }
 
 type PageData struct {
-	Title string
-	Diff  string
+	Title    string
+	Diff     string
+	HasText  bool
+	HasAny   bool
+	Stats    Stats
+	Images   []ImageView
+	PDFs     []ExtraView
+	Binaries []ExtraView
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	var (
-		wg        sync.WaitGroup
-		finalStr  = ""
-		diffChan  = make(chan string)
-		errorChan = make(chan error)
-		start     = time.Now()
-		elapsed   time.Duration
-	)
+func renderPage(w http.ResponseWriter, res *Result) {
+	tmpl, err := template.New("html").Parse(static.HTML)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	go func() {
-		for diff := range diffChan {
-			finalStr += diff
-			elapsed = time.Since(start)
+	data := pageData(res)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := tmpl.Execute(w, data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func pageData(res *Result) PageData {
+	data := PageData{
+		Title:  "Diffr - A web-based content difference analyzer",
+		Stats:  res.Stats,
+		HasAny: res.HasChanges(),
+	}
+
+	var textParts []string
+	for _, f := range res.Files {
+		switch f.Kind {
+		case KindText:
+			if f.Unified != "" {
+				textParts = append(textParts, f.Unified)
+			}
+		case KindImage:
+			data.Images = append(data.Images, ImageView{
+				RelPath:  f.RelPath,
+				Status:   f.Status.String(),
+				Summary:  f.Summary,
+				LeftURL:  mediaURL("left", f.RelPath),
+				RightURL: mediaURL("right", f.RelPath),
+				DiffURL:  mediaURL("diff", f.RelPath),
+				HasLeft:  f.LeftPath != "",
+				HasRight: f.RightPath != "",
+				HasDiff:  len(f.DiffPNG) > 0,
+			})
+		case KindPDF:
+			data.PDFs = append(data.PDFs, ExtraView{
+				RelPath: f.RelPath,
+				Status:  f.Status.String(),
+				Summary: f.Summary,
+				Kind:    f.Kind.String(),
+				Unified: f.Unified,
+			})
+		case KindBinary:
+			data.Binaries = append(data.Binaries, ExtraView{
+				RelPath: f.RelPath,
+				Status:  f.Status.String(),
+				Summary: f.Summary,
+				Kind:    f.Kind.String(),
+			})
 		}
-	}()
+	}
+	data.Diff = strings.Join(textParts, "")
+	data.HasText = strings.TrimSpace(data.Diff) != ""
+	return data
+}
 
-	go func() {
-		for err := range errorChan {
-			fmt.Printf("error: %v", err)
+func mediaURL(side, rel string) string {
+	parts := strings.Split(rel, "/")
+	for i, p := range parts {
+		parts[i] = url.PathEscape(p)
+	}
+	return "/media/" + side + "/" + strings.Join(parts, "/")
+}
+
+func serveMedia(w http.ResponseWriter, r *http.Request, res *Result) {
+	rest := strings.TrimPrefix(r.URL.Path, "/media/")
+	side, rel, ok := strings.Cut(rest, "/")
+	if !ok || rel == "" {
+		http.NotFound(w, r)
+		return
+	}
+	rel = path.Clean(rel)
+	if rel == ".." || strings.HasPrefix(rel, "../") {
+		http.Error(w, "invalid path", http.StatusBadRequest)
+		return
+	}
+
+	switch side {
+	case "diff":
+		for _, f := range res.Files {
+			if f.RelPath == rel && len(f.DiffPNG) > 0 {
+				w.Header().Set("Content-Type", "image/png")
+				_, _ = w.Write(f.DiffPNG)
+				return
+			}
 		}
-	}()
+		http.NotFound(w, r)
+	case "left":
+		serveSideFile(w, r, res.LeftAbs, res.LeftDir, rel)
+	case "right":
+		serveSideFile(w, r, res.RightAbs, res.RightDir, rel)
+	default:
+		http.NotFound(w, r)
+	}
+}
 
-	wg.Add(1)
-	go CompareDirectories(dir1, dir2, diffChan, errorChan, &wg)
-	wg.Wait()
+func serveSideFile(w http.ResponseWriter, r *http.Request, root string, isDir bool, rel string) {
+	target, err := safeJoin(root, rel, isDir)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	http.ServeFile(w, r, target)
+}
 
-	close(diffChan)
-	close(errorChan)
-
-	fmt.Printf("Time taken to analyze all files: %s\n", elapsed)
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		tmpl := template.Must(template.New("html").Parse(static.HTML))
-
-		data := PageData{
-			Title: "Diffr - A web-based content difference analyzer",
-			Diff:  finalStr,
-		}
-
-		// Execute the templates with the provided data
-		w.WriteHeader(http.StatusOK)
-		err := tmpl.Execute(w, data)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}()
-
-	wg.Wait()
+func safeJoin(root, rel string, isDir bool) (string, error) {
+	if !isDir {
+		return root, nil
+	}
+	rootAbs, err := filepath.Abs(root)
+	if err != nil {
+		return "", err
+	}
+	joined := filepath.Join(rootAbs, filepath.FromSlash(rel))
+	abs, err := filepath.Abs(joined)
+	if err != nil {
+		return "", err
+	}
+	sep := string(os.PathSeparator)
+	if abs != rootAbs && !strings.HasPrefix(abs, rootAbs+sep) {
+		return "", fmt.Errorf("invalid path")
+	}
+	return abs, nil
 }

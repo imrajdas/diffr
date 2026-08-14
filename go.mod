@@ -1,9 +1,11 @@
 module github.com/imrajdas/diffr
 
-go 1.20
+go 1.26.6
 
 require (
+	github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728
 	github.com/pmezard/go-difflib v1.0.0
+	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/spf13/cobra v1.7.0
 )
 
